@@ -121,12 +121,29 @@ def load_parquet_files_to_postgres(data_dir: str = "./data/bulgaria_verified"):
                     continue
 
                 # Standardize column names (airbase data structure)
-                # Adjust these based on actual parquet structure
                 df.columns = df.columns.str.lower()
+
+                # Rename columns to match database schema
+                column_mapping = {
+                    'samplingpoint': 'station_code',
+                    'averagingtime': 'averaging_time',
+                    'datacapture': 'data_capture',
+                    'countrycode': 'country_code'
+                }
+                df.rename(columns=column_mapping, inplace=True)
 
                 # Add country code if not present
                 if 'country_code' not in df.columns:
                     df['country_code'] = 'BG'
+
+                # Select only columns that exist in our table
+                expected_columns = [
+                    'station_code', 'pollutant', 'datetime', 'value', 'unit',
+                    'averaging_time', 'validity', 'verification', 'data_capture', 'country_code'
+                ]
+                # Keep only columns that exist in both the dataframe and expected columns
+                available_columns = [col for col in expected_columns if col in df.columns]
+                df = df[available_columns]
 
                 # Load to PostgreSQL using upsert (insert or update on conflict)
                 df.to_sql(
