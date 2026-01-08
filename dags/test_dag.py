@@ -65,7 +65,7 @@ with DAG(
     dag_id='bulgaria_air_quality_pipeline',
     default_args=default_args,
     description='Daily download of verified PM2.5 and PM10 air quality data for Bulgaria',
-    schedule_interval='@daily',  # Run once per day at midnight
+    schedule='@daily',  # Run once per day at midnight
     start_date=pendulum.yesterday('UTC'),
     catchup=False,  # Don't run for past dates
     tags=['air-quality', 'bulgaria', 'pm25', 'pm10', 'environment'],
