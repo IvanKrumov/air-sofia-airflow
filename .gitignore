@@ -1,1 +1,42 @@
-venv*
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv*/
+env/
+ENV/
+
+# Airflow
+logs/
+airflow.db
+airflow.cfg
+unittests.cfg
+airflow_login.py
+dbinit.py
+initdb.py
+secrets/
+
+# Data files
+data/
+*.parquet
+*.csv
+*.json
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.*.local
