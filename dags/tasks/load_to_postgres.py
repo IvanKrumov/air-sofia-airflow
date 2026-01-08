@@ -60,11 +60,10 @@ def create_table_if_not_exists(engine):
     CREATE INDEX IF NOT EXISTS idx_pollutant ON air_quality_measurements(pollutant);
     """
 
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         for statement in create_table_sql.split(';'):
             if statement.strip():
                 conn.execute(text(statement))
-        conn.commit()
 
     logger.info("✓ Table 'air_quality_measurements' created/verified")
 
