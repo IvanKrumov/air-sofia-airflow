@@ -8,8 +8,8 @@ from the European Air Quality Portal for Bulgaria on a daily schedule.
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
 import logging
+import pendulum
 
 # Default arguments for the DAG
 default_args = {
@@ -66,7 +66,7 @@ with DAG(
     default_args=default_args,
     description='Daily download of verified PM2.5 and PM10 air quality data for Bulgaria',
     schedule_interval='@daily',  # Run once per day at midnight
-    start_date=days_ago(1),
+    start_date=pendulum.yesterday('UTC'),
     catchup=False,  # Don't run for past dates
     tags=['air-quality', 'bulgaria', 'pm25', 'pm10', 'environment'],
 ) as dag:
