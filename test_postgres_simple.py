@@ -25,7 +25,10 @@ def test_connection():
     print("=" * 60)
 
     # Get connection parameters from .env or use defaults
+    # Note: Use localhost for local testing, even if .env has host.docker.internal
     host = os.environ.get('POSTGRES_HOST', 'localhost')
+    if host == 'host.docker.internal':
+        host = 'localhost'  # Override for local testing
     port = os.environ.get('POSTGRES_PORT', '5432')
     database = os.environ.get('POSTGRES_DB', 'airquality')
     user = os.environ.get('POSTGRES_USER', 'postgres')
