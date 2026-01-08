@@ -33,10 +33,16 @@ def download_air_quality_data():
     from the European Air Quality Portal.
     """
     import airbase
+    import os
 
     logger = logging.getLogger(__name__)
 
     try:
+        # Ensure data directory exists
+        data_dir = "./data/bulgaria_verified"
+        os.makedirs(data_dir, exist_ok=True)
+        logger.info(f"Data directory: {data_dir}")
+
         logger.info("Initializing Airbase client...")
         client = airbase.AirbaseClient()
 
@@ -48,11 +54,11 @@ def download_air_quality_data():
         )
 
         logger.info("Request created successfully!")
-        logger.info("Starting download to ./data/bulgaria_verified/")
+        logger.info(f"Starting download to {data_dir}/")
 
         # Download the data
         request.download(
-            dir="./data/bulgaria_verified",
+            dir=data_dir,
             skip_existing=True
         )
 
