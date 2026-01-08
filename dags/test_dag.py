@@ -2,7 +2,8 @@
 Air Quality Data Pipeline for Sofia, Bulgaria
 
 This DAG downloads verified PM2.5 and PM10 air quality measurements
-from the European Air Quality Portal for Bulgaria on a daily schedule.
+from the European Air Quality Portal for Bulgaria on a daily schedule,
+then loads the data into PostgreSQL.
 """
 
 from datetime import datetime, timedelta
@@ -10,6 +11,9 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 import logging
 import pendulum
+
+# Import task functions from tasks module
+from tasks.load_to_postgres import load_data_task
 
 # Default arguments for the DAG
 default_args = {
@@ -71,7 +75,7 @@ with DAG(
     tags=['air-quality', 'bulgaria', 'pm25', 'pm10', 'environment'],
 ) as dag:
 
-    # Task to download air quality data
+    # Task 1: Download air quality data
     download_task = PythonOperator(
         task_id='download_bulgaria_air_quality',
         python_callable=download_air_quality_data,
@@ -96,11 +100,27 @@ with DAG(
         """,
     )
 
-    download_task
+    # Task 2: Load data to PostgreSQL
+    load_to_db_task = PythonOperator(
+        task_id='load_to_postgres',
+        python_callable=load_data_task,
+        doc_md="""
+        ### Load Air Quality Data to PostgreSQL
 
-# Task dependencies (just one task for now, but ready to add more)
-# Future tasks could include:
-# - Data validation
-# - Transform data for Sofia specifically
-# - Load into database
-# - Generate reports/visualizations
+        This task reads the downloaded parquet files and loads them into PostgreSQL.
+
+        **Database:** External PostgreSQL container (postgres-sql-workshop)
+        **Table:** air_quality_measurements
+        **Connection:** Configured via environment variables
+
+        The task will:
+        1. Connect to PostgreSQL database
+        2. Create table if it doesn't exist
+        3. Read all parquet files from data directory
+        4. Load data into database
+        5. Report statistics on loaded data
+        """,
+    )
+
+    # Task dependencies: download first, then load to database
+    download_task >> load_to_db_task
