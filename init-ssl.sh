@@ -15,7 +15,8 @@ echo "=== Step 2: Wait for Nginx to be ready ==="
 sleep 5
 
 echo "=== Step 3: Request SSL certificate from Let's Encrypt ==="
-docker compose run --rm certbot certonly \
+docker compose run --rm --entrypoint "" certbot \
+    certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email "$EMAIL" \
