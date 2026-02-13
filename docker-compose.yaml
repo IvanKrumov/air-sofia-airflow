@@ -49,8 +49,10 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider distributions you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.5}
-  # build: .
+  # image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:3.1.5}
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
   env_file:
     - ${ENV_FILE_PATH:-.env}
   environment:
@@ -62,7 +64,7 @@ x-airflow-common:
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-    AIRFLOW__CORE__LOAD_EXAMPLES: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
@@ -74,6 +76,15 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    # PySpark
+    JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+    SPARK_HOME: /opt/spark
+    # Airquality database connection (used by DAG tasks)
+    AIRQUALITY_DB_HOST: postgres
+    AIRQUALITY_DB_PORT: "5432"
+    AIRQUALITY_DB_NAME: airquality
+    AIRQUALITY_DB_USER: airflow
+    AIRQUALITY_DB_PASSWORD: airflow
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
@@ -99,6 +110,9 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
+      - ./db/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
@@ -335,6 +349,34 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    environment:
+      FLASK_ENV: production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: airquality
+      DB_USER: airflow
+      DB_PASSWORD: airflow
+    expose:
+      - "5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - webapp
+    restart: always
 
 volumes:
   postgres-db-volume:

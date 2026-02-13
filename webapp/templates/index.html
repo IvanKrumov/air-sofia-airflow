@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="filters">
+    <form method="get" action="/">
+        <label for="station">Station:</label>
+        <select name="station" id="station">
+            <option value="all" {% if selected_station == 'all' %}selected{% endif %}>All Stations</option>
+            {% for s in stations %}
+            <option value="{{ s }}" {% if selected_station == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="pollutant">Pollutant:</label>
+        <select name="pollutant" id="pollutant">
+            <option value="all" {% if selected_pollutant == 'all' %}selected{% endif %}>All</option>
+            <option value="5" {% if selected_pollutant == '5' %}selected{% endif %}>PM2.5</option>
+            <option value="6001" {% if selected_pollutant == '6001' %}selected{% endif %}>PM10</option>
+        </select>
+
+        <button type="submit">Filter</button>
+    </form>
+</section>
+
+<section class="chart-container">
+    <div id="timeseries-chart"></div>
+</section>
+
+<section class="stats">
+    <h2>Summary Statistics</h2>
+    {% if stats %}
+    <table>
+        <thead>
+            <tr>
+                <th>Pollutant</th>
+                <th>Total Measurements</th>
+                <th>Avg Value (ug/m3)</th>
+                <th>Min</th>
+                <th>Max</th>
+                <th>Date Range</th>
+                <th>Stations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in stats %}
+            <tr>
+                <td>{{ pollutant_names.get(s.pollutant, s.pollutant) }}</td>
+                <td>{{ "{:,}".format(s.total_measurements) }}</td>
+                <td>{{ s.avg_value }}</td>
+                <td>{{ s.min_value }}</td>
+                <td>{{ s.max_value }}</td>
+                <td>{{ s.earliest }} &mdash; {{ s.latest }}</td>
+                <td>{{ s.station_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="no-data">No data available. Run the Airflow pipeline first.</p>
+    {% endif %}
+</section>
+
+<script>
+    var chartData = {{ timeseries_chart | safe }};
+    if (chartData && Object.keys(chartData).length > 0) {
+        Plotly.newPlot('timeseries-chart', chartData.data, chartData.layout, {responsive: true});
+    } else {
+        document.getElementById('timeseries-chart').innerHTML =
+            '<p class="no-data">No data available. Run the Airflow pipeline first.</p>';
+    }
+</script>
+{% endblock %}
